@@ -48,8 +48,13 @@ lib/
     auth/
       auth_controller.dart         مدیریت وضعیت ورود (ChangeNotifier)
       login_screen.dart            صفحه ورود Key/Secret
-    home/
-      home_placeholder_screen.dart صفحه موقت بعد از ورود (فاز ۵ جایگزین می‌شه)
+    orders/
+      order_models.dart            مدل‌های سفارش/آدرس/آیتم/وضعیت
+      orders_repository.dart       فراخوانی اندپوینت‌های wcom/v1 مربوط به سفارش
+      orders_controller.dart       وضعیت لیست سفارشات (فیلتر، صفحه‌بندی، Pull-to-refresh)
+      orders_list_screen.dart      صفحه لیست سفارشات
+      order_detail_controller.dart وضعیت یک سفارش + تغییر وضعیت
+      order_detail_screen.dart     صفحه جزئیات سفارش
 ```
 
 ## امضای درخواست‌ها (هماهنگ با پلاگین)
@@ -65,8 +70,19 @@ signature      = hex( HMAC-SHA256(string_to_sign, api_secret) )
 `PATH` فقط مسیر داخل namespace هست (مثل `/wcom/v1/orders/123`)، نه URL کامل و بدون
 query string — برای جزئیات کامل به README پلاگین مراجعه کن.
 
+## نکته درباره Provider و Navigator (فاز ۵)
+
+`OrdersRepository` در بالاترین سطح ممکن (کنار `AuthController`، بالاتر از `Navigator` داخلی
+`MaterialApp`) تعریف شده، نه داخل مسیر صفحه لیست سفارشات. دلیلش یک رفتار خاص Provider/Navigator
+در فلاتره: صفحه‌ای که با `Navigator.push` باز می‌شه، از نظر درخت ویجت **فرزند** صفحه قبلی نیست،
+بلکه یک مسیر(route) جداست؛ پس Providerهایی که فقط داخل یک مسیر خاص (مثل لیست سفارشات) تعریف
+شده باشن، داخل صفحه‌ای که با push باز می‌شه (مثل جزئیات سفارش) در دسترس نیستن. برای همین
+`OrdersRepository` بالای همه مسیرها قرار گرفته (فقط `AuthController` رو نگه می‌داره و در لحظه‌ی
+هر درخواست بهش رجوع می‌کنه)، در حالی که `OrdersController` (وضعیت لیست) چون فقط داخل همون صفحه
+لیست استفاده می‌شه، محدود به همون مسیر مونده.
+
 ## نقشه راه
 
 - [x] فاز ۴ — راه‌اندازی پروژه، صفحه ورود، لایه API با HMAC
-- [ ] فاز ۵ — صفحات اصلی (لیست سفارشات، جزئیات، تغییر وضعیت)
+- [x] فاز ۵ — صفحات اصلی (لیست سفارشات، جزئیات، تغییر وضعیت)
 - [ ] فاز ۶ — نوتیفیکیشن (Firebase) + Fallback با Polling
