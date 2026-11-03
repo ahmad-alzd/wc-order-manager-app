@@ -1,0 +1,36 @@
+name: wc_order_manager
+description: Mobile app for managing WooCommerce orders via the WC Order Manager WordPress plugin.
+publish_to: "none"
+version: 0.1.0
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+  flutter: ">=3.19.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+
+  # Secure, encrypted local storage for the API key/secret pair.
+  flutter_secure_storage: ^9.2.2
+
+  # HTTP client for talking to the WordPress REST API.
+  http: ^1.2.1
+
+  # HMAC-SHA256 request signing (mirrors the plugin's WCOM_Auth).
+  crypto: ^3.0.3
+
+  # Lightweight state management for the auth flow and (later) orders.
+  provider: ^6.1.2
+
+  # JSON model code generation helpers (used as plain Dart classes for now).
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true

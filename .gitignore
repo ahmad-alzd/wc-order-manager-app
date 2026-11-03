@@ -1,0 +1,29 @@
+# Flutter/Dart build artifacts
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+*.lock
+
+# Platform folders are generated locally via `flutter create .`
+# (see README) and are intentionally not committed yet — they don't
+# exist until that command is run, and regenerating them is
+# deterministic from pubspec.yaml + this repo's app id.
+/android/
+/ios/
+/linux/
+/macos/
+/windows/
+/web/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Secrets — never commit a real Firebase config.
+google-services.json
+GoogleService-Info.plist
