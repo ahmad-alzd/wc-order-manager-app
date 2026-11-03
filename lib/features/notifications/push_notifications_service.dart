@@ -44,26 +44,33 @@ class PushNotificationsService {
   StreamSubscription<String>? _tokenRefreshSubscription;
   bool _listenersAttached = false;
 
-  /// Call once at app startup (Firebase.initializeApp() itself must
-  /// already have run in main(), before runApp).
+  /// Call once at app startup. Safe to call even if Firebase never
+  /// initialized successfully in main() (e.g. google-services.json
+  /// isn't set up yet, see README) — this just silently leaves push
+  /// notifications off instead of crashing the app; login and the
+  /// orders list don't depend on it.
   Future<void> initialize() async {
-    await _initLocalNotifications();
+    try {
+      await _initLocalNotifications();
 
-    await FirebaseMessaging.instance.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
+      await FirebaseMessaging.instance.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
 
-    if (_listenersAttached) return;
-    _listenersAttached = true;
+      if (_listenersAttached) return;
+      _listenersAttached = true;
 
-    FirebaseMessaging.onMessage.listen(_showForegroundNotification);
-    FirebaseMessaging.onMessageOpenedApp.listen(_handleMessageTap);
+      FirebaseMessaging.onMessage.listen(_showForegroundNotification);
+      FirebaseMessaging.onMessageOpenedApp.listen(_handleMessageTap);
 
-    final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
-    if (initialMessage != null) {
-      _handleMessageTap(initialMessage);
+      final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+      if (initialMessage != null) {
+        _handleMessageTap(initialMessage);
+      }
+    } catch (e) {
+      debugPrint('Push notifications unavailable: $e');
     }
   }
 
@@ -76,8 +83,12 @@ class PushNotificationsService {
 
     _registerCurrentToken();
 
-    _tokenRefreshSubscription?.cancel();
-    _tokenRefreshSubscription = FirebaseMessaging.instance.onTokenRefresh.listen(_registerToken);
+    try {
+      _tokenRefreshSubscription?.cancel();
+      _tokenRefreshSubscription = FirebaseMessaging.instance.onTokenRefresh.listen(_registerToken);
+    } catch (e) {
+      debugPrint('Could not subscribe to FCM token refresh: $e');
+    }
   }
 
   /// Call on logout, so a stale service no longer tries to register
@@ -89,9 +100,13 @@ class PushNotificationsService {
   }
 
   Future<void> _registerCurrentToken() async {
-    final token = await FirebaseMessaging.instance.getToken();
-    if (token != null) {
-      await _registerToken(token);
+    try {
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token != null) {
+        await _registerToken(token);
+      }
+    } catch (e) {
+      debugPrint('Could not get the FCM token: $e');
     }
   }
 
