@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -16,20 +18,44 @@ class OrdersListScreen extends StatefulWidget {
   State<OrdersListScreen> createState() => _OrdersListScreenState();
 }
 
-class _OrdersListScreenState extends State<OrdersListScreen> {
+class _OrdersListScreenState extends State<OrdersListScreen> with WidgetsBindingObserver {
   final _scrollController = ScrollController();
+
+  /// Polling fallback (see OrdersController.silentRefresh): re-checks
+  /// for new orders periodically while this screen is open, in case a
+  /// push notification never arrived.
+  static const _pollInterval = Duration(seconds: 60);
+  Timer? _pollTimer;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    WidgetsBinding.instance.addObserver(this);
+    _pollTimer = Timer.periodic(_pollInterval, (_) {
+      if (!mounted) return;
+      context.read<OrdersController>().silentRefresh();
+    });
   }
 
   @override
   void dispose() {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+    _pollTimer?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Catches the common case directly: the user switched away (to
+    // check a different app, or just to get a notification tap
+    // through the OS) and comes back — refresh right away instead of
+    // waiting for the next poll tick.
+    if (state == AppLifecycleState.resumed && mounted) {
+      context.read<OrdersController>().silentRefresh();
+    }
   }
 
   void _onScroll() {

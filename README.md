@@ -55,6 +55,9 @@ lib/
       orders_list_screen.dart      صفحه لیست سفارشات
       order_detail_controller.dart وضعیت یک سفارش + تغییر وضعیت
       order_detail_screen.dart     صفحه جزئیات سفارش
+    notifications/
+      device_token_repository.dart ثبت توکن FCM دستگاه (POST /device-token)
+      push_notifications_service.dart دریافت Push، نمایش در foreground، باز کردن سفارش با تپ
 ```
 
 ## امضای درخواست‌ها (هماهنگ با پلاگین)
@@ -81,8 +84,50 @@ query string — برای جزئیات کامل به README پلاگین مرا�
 هر درخواست بهش رجوع می‌کنه)، در حالی که `OrdersController` (وضعیت لیست) چون فقط داخل همون صفحه
 لیست استفاده می‌شه، محدود به همون مسیر مونده.
 
+## راه‌اندازی Firebase برای اندروید (بعد از `flutter create`)
+
+کد Dart سمت اپ (`firebase_core`, `firebase_messaging`) آماده‌ست، ولی چند قدم باقی می‌مونه که
+فقط روی فایل‌های پلتفرمی (`android/`) ممکنه، یعنی فقط بعد از اجرای `flutter create` (بخش بالا)
+و روی ماشین خودت:
+
+1. در [Firebase Console](https://console.firebase.google.com)، همون پروژه‌ای که برای پلاگین
+   وردپرس ساختی رو باز کن (یا پروژه جدید بساز) و یک **اپ اندروید** به‌ش اضافه کن. Package name
+   باید دقیقاً همونی باشه که با `--org` به `flutter create` دادی (مثلاً
+   `com.wcordermanager.wc_order_manager`).
+2. فایل `google-services.json` رو دانلود کن و در `android/app/google-services.json` قرار بده.
+   (این فایل در `.gitignore` قرار داره و هیچ‌وقت نباید commit بشه.)
+3. در `android/build.gradle` (سطح پروژه)، داخل `buildscript { dependencies { ... } }` اضافه کن:
+   ```gradle
+   classpath 'com.google.gms:google-services:4.4.2'
+   ```
+4. در `android/app/build.gradle`، در همون انتهای فایل اضافه کن:
+   ```gradle
+   apply plugin: 'com.google.gms.google-services'
+   ```
+   و مطمئن شو `minSdkVersion` حداقل `23` تنظیم شده باشه (نیاز `firebase_messaging`).
+5. `flutter pub get` و بعد `flutter run` — روی اندروید ۱۳ به بالا، اولین اجرا از کاربر اجازه
+   نوتیفیکیشن می‌پرسه (از طریق `requestPermission()` که در `push_notifications_service.dart`
+   صدا زده می‌شه).
+
+> اگه از iOS هم بخوای ساپورت کنی، مراحل مشابهی (`GoogleService-Info.plist` + تنظیمات Xcode) لازمه که
+> فعلاً چون پروژه فقط اندرویده، اینجا نیاورده شده.
+
+## Push Notification و Fallback (فاز ۶)
+
+- **دریافت لحظه‌ای**: `PushNotificationsService` توکن FCM دستگاه رو بعد از ورود (و هر بار که
+  فایربیس توکن رو عوض کنه) با `POST /wcom/v1/device-token` به پلاگین می‌فرسته.
+- **نمایش نوتیف در foreground**: چون FCM خودش فقط وقتی اپ در پس‌زمینه یا بسته باشه نوتیف سیستمی
+  نشون می‌ده، برای حالت باز بودن اپ از `flutter_local_notifications` استفاده شده تا نوتیف دستی
+  نمایش داده بشه.
+- **باز شدن سفارش با تپ روی نوتیف**: چه از پس‌زمینه چه از حالت بسته (`getInitialMessage`)، تپ روی
+  نوتیف مستقیم صفحه جزئیات همون سفارش رو باز می‌کنه (از طریق یک `navigatorKey` سراسری).
+- **Fallback با Polling**: همون‌طور که قبلاً درباره محدودیت‌های گوگل برای FCM در ایران صحبت کردیم،
+  `OrdersController.silentRefresh()` هر ۶۰ ثانیه (و هر بار که اپ از پس‌زمینه برمی‌گرده) لیست
+  سفارشات رو بی‌صدا (بدون Loading/Error UI) دوباره می‌گیره؛ یعنی حتی اگه Push به هر دلیلی نرسه،
+  کاربر با حداکثر یک دقیقه تاخیر سفارش جدید رو توی لیست می‌بینه.
+
 ## نقشه راه
 
 - [x] فاز ۴ — راه‌اندازی پروژه، صفحه ورود، لایه API با HMAC
 - [x] فاز ۵ — صفحات اصلی (لیست سفارشات، جزئیات، تغییر وضعیت)
-- [ ] فاز ۶ — نوتیفیکیشن (Firebase) + Fallback با Polling
+- [x] فاز ۶ — نوتیفیکیشن (Firebase) + Fallback با Polling

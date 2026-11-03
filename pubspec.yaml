@@ -27,6 +27,13 @@ dependencies:
   # JSON model code generation helpers (used as plain Dart classes for now).
   intl: ^0.19.0
 
+  # Push notifications (Phase 6): Firebase Cloud Messaging + showing a
+  # system notification ourselves while the app is in the foreground
+  # (FCM only auto-displays one for background/terminated state).
+  firebase_core: ^3.0.0
+  firebase_messaging: ^15.0.0
+  flutter_local_notifications: ^17.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
